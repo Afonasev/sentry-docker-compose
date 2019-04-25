@@ -1,0 +1,49 @@
+version: '3.4'
+
+x-defaults: &defaults
+  image: sentry
+  restart: always
+  depends_on:
+    - redis
+    - postgres
+  environment:
+    SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+    SENTRY_POSTGRES_HOST: postgres
+    SENTRY_DB_USER: sentry
+    SENTRY_DB_PASSWORD: sentry
+    SENTRY_REDIS_HOST: redis
+  volumes:
+    - sentry-data:/var/lib/sentry/files
+
+services:
+  sentry:
+    <<: *defaults
+    ports:
+      - 9000:9000
+    depends_on:
+      - cron
+      - worker
+
+  cron:
+    <<: *defaults
+    command: "sentry run cron"
+
+  worker:
+    <<: *defaults
+    command: "sentry run worker"
+
+  redis:
+    image: redis
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: sentry
+      POSTGRES_PASSWORD: sentry
+      POSTGRES_DB: sentry
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  sentry-data:
+  postgres-data:
